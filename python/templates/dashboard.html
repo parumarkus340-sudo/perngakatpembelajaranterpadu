@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard AI - Perangkat Pembelajaran</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f0f4f8; font-family: 'Segoe UI', sans-serif; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .card { border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border: none; }
+        .card-title { font-weight: 600; color: #0f2b5c; }
+        .stat-number { font-size: 2.5em; font-weight: 700; color: #667eea; }
+        .stat-label { color: #6b7280; font-size: 14px; }
+        .chart-container { position: relative; height: 250px; }
+        .ai-badge { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 2px 12px; border-radius: 20px; font-size: 11px; }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-robot me-2"></i>Dashboard AI & Analisis</h1>
+            <p class="mb-0 opacity-75">Sistem Analisis Data dan AI untuk Perangkat Pembelajaran</p>
+        </div>
+
+        <!-- Statistik -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card p-3">
+                    <div class="stat-number" id="totalDocs">0</div>
+                    <div class="stat-label">📄 Total Dokumen</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3">
+                    <div class="stat-number text-success" id="verifiedDocs">0</div>
+                    <div class="stat-label">✅ Terverifikasi</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3">
+                    <div class="stat-number text-warning" id="pendingDocs">0</div>
+                    <div class="stat-label">⏳ Pending</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3">
+                    <div class="stat-number text-danger" id="rejectedDocs">0</div>
+                    <div class="stat-label">❌ Ditolak</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="card p-3">
+                    <div class="card-title">📊 Dokumen per Jenis</div>
+                    <div class="chart-container">
+                        <canvas id="jenisChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card p-3">
+                    <div class="card-title">📈 Trend Upload Bulanan</div>
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tombol Aksi -->
+        <div class="row g-3 mt-3">
+            <div class="col-12">
+                <div class="card p-3">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="/api/laporan/excel" class="btn btn-success">
+                            <i class="fas fa-file-excel"></i> Download Laporan
+                        </a>
+                        <a href="/api/visualisasi" target="_blank" class="btn btn-info text-white">
+                            <i class="fas fa-chart-pie"></i> Lihat Visualisasi
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Generate -->
+        <div class="row g-3 mt-2">
+            <div class="col-12">
+                <div class="card p-3">
+                    <div class="card-title">
+                        <i class="fas fa-robot text-primary"></i> Generate Perangkat Ajar dengan AI
+                        <span class="ai-badge">BETA</span>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <select class="form-select" id="aiJenis">
+                                <option value="rpp">📄 RPP</option>
+                                <option value="modul">📘 Modul</option>
+                                <option value="ppt">📊 PPT</option>
+                                <option value="soal">📝 Soal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" id="aiTopik" placeholder="Topik/Materi">
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" id="aiKelas">
+                                <option value="10">Kelas 10</option>
+                                <option value="11">Kelas 11</option>
+                                <option value="12">Kelas 12</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" id="aiMapel">
+                                <option value="Matematika">Matematika</option>
+                                <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                                <option value="Bahasa Inggris">Bahasa Inggris</option>
+                                <option value="IPA">IPA</option>
+                                <option value="IPS">IPS</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary w-100" onclick="generateAI()">
+                                <i class="fas fa-wand-magic-sparkles"></i> Generate
+                            </button>
+                        </div>
+                    </div>
+                    <div id="aiResult" class="mt-3" style="display:none;">
+                        <div class="bg-light p-3 rounded">
+                            <h6 class="text-primary"><i class="fas fa-check-circle text-success"></i> Hasil Generate AI</h6>
+                            <div id="aiContent"></div>
+                            <button class="btn btn-success btn-sm mt-2" onclick="saveAIResult()">
+                                <i class="fas fa-save"></i> Simpan ke Draft
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // LOAD DATA
+        // ============================================
+        async function loadData() {
+            try {
+                const jenisRes = await fetch('/api/analisis/jenis');
+                const jenisData = await jenisRes.json();
+                
+                let total = 0, verified = 0, pending = 0, rejected = 0;
+                jenisData.forEach(d => {
+                    total += d.total;
+                    verified += d.terverifikasi;
+                    pending += d.pending;
+                    rejected += d.ditolak;
+                });
+                
+                document.getElementById('totalDocs').textContent = total;
+                document.getElementById('verifiedDocs').textContent = verified;
+                document.getElementById('pendingDocs').textContent = pending;
+                document.getElementById('rejectedDocs').textContent = rejected;
+                
+                // Chart Jenis
+                new Chart(document.getElementById('jenisChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: jenisData.map(d => d.jenis.toUpperCase()),
+                        datasets: [{
+                            label: 'Total',
+                            data: jenisData.map(d => d.total),
+                            backgroundColor: ['#4f46e5', '#0d9488', '#2563eb', '#7c3aed']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+                
+                // Trend
+                const trendRes = await fetch('/api/analisis/trend');
+                const trendData = await trendRes.json();
+                
+                new Chart(document.getElementById('trendChart'), {
+                    type: 'line',
+                    data: {
+                        labels: trendData.map(d => d.bulan),
+                        datasets: [
+                            { label: 'Total', data: trendData.map(d => d.total), borderColor: '#667eea', fill: false },
+                            { label: 'Terverifikasi', data: trendData.map(d => d.terverifikasi), borderColor: '#28a745', fill: false }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+                
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
+        // ============================================
+        // GENERATE AI
+        // ============================================
+        async function generateAI() {
+            const jenis = document.getElementById('aiJenis').value;
+            const topik = document.getElementById('aiTopik').value;
+            const kelas = document.getElementById('aiKelas').value;
+            const mapel = document.getElementById('aiMapel').value;
+            
+            if (!topik) {
+                alert('Masukkan topik/materi terlebih dahulu!');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/generate/perangkat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ jenis, topik, kelas, mapel })
+                });
+                const data = await res.json();
+                
+                document.getElementById('aiResult').style.display = 'block';
+                document.getElementById('aiContent').innerHTML = `
+                    <div class="mb-2"><strong>📝 Judul:</strong> ${data.judul}</div>
+                    <div class="mb-2"><strong>📄 Deskripsi:</strong> ${data.deskripsi}</div>
+                    <div class="mb-2"><strong>🎯 Tujuan:</strong><br>${data.tujuan.replace(/\n/g, '<br>')}</div>
+                    <div class="mb-2"><strong>📋 Langkah:</strong><br>${data.langkah.replace(/\n/g, '<br>')}</div>
+                    <div class="mb-2"><strong>📊 Penilaian:</strong><br>${data.penilaian.replace(/\n/g, '<br>')}</div>
+                `;
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        function saveAIResult() {
+            alert('✅ Dokumen akan disimpan ke draft!');
+        }
+
+        // ============================================
+        // INIT
+        // ============================================
+        loadData();
+    </script>
+</body>
+</html>
